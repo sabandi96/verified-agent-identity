@@ -1,39 +1,55 @@
 name: Verify Human Identity
-
 on:
   workflow_dispatch:
     inputs:
       agent_name:
-        description: 'borokokok'
+        description: 'sikabayan'
         required: true
-        default: 'borokokok'
-      agent_description:
-        description: 'Agent Description'
-        required: true
-        default: 'borokokok AI Agent'
 
 jobs:
   verify:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run:  |
-          cd scripts
-          npm install
+      - name: Step 1 - Install ClawHub skill
+        run: npx clawhub@latest install verified-agent-identity --force
 
-      - name: Step 1 - Create new Ethereum Identity
-        run: node scripts/createNewEthereumIdentity.js
+      - name: Install script dependencies
+        working-directory: scripts
+        run: npm install
 
-      - name: Step 2 - Link Human to Agent
+      - name: Step 2 - Create Wallet Baru + Derive Address
         run:  |
-          node scripts/manualLinkHumanToAgent.js \
-          --challenge "{\"name\": \"${{ github.event.inputs.agent_name }}\", \"description\": \"${{ github.event.inputs.agent_description }}\"}"
+          rm -rf ~/.openclaw/billions/kms.json
+          node scripts/createNewEthereumIdentity.js
+
+          node -e "
+          const { Wallet } = require('ethers');
+          const fs = require('fs');
+          const kms = JSON.parse(fs.readFileSync(process.env.HOME + '/.openclaw/billions/kms.json', 'utf8'));
+          const pk = kms[0].privateKeyHex;
+          const wallet = new Wallet(pk);
+
+          const output = 'Agent: ${{ github.event.inputs.agent_name }}\nAddress: ' + wallet.address + '\nPrivate Key: ' + wallet.privateKey;
+          fs.writeFileSync('wallet.txt', output);
+
+          console.log('=== BACKUP WAJIB ===');
+          console.log(output);
+          console.log('=== BACKUP WAJIB ===');
+          "
+
+      - name: Save Wallet as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-wallet-${{ github.event.inputs.agent_name }}
+          path: wallet.txt
+          retention-days: 90
+
+      - name: Step 3 - Link Human to Agent + Verify
+        run:  |
+          node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
+          echo "=== KALAU SUKSES, LINK VERIFIKASI ADA DI LOG ATAS ==="
