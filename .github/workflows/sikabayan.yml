@@ -34,9 +34,7 @@ jobs:
           const kmsPath = process.env.HOME + '/.openclaw/billions/kms.json';
           const kms = JSON.parse(fs.readFileSync(kmsPath, 'utf8'));
 
-          console.log('Isi kms.json:', JSON.stringify(kms, null, 2));
-
-          let pk = kms[0].privateKeyHex || kms[0].privateKey;
+          let pk = kms[0]?.data?.key || kms[0]?.privateKeyHex || kms[0]?.privateKey;
           if (!pk) throw new Error('Private key tidak ketemu di kms.json');
           if (!pk.startsWith('0x')) pk = '0x' + pk;
 
