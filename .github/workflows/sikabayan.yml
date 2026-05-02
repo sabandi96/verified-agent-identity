@@ -55,8 +55,7 @@ jobs:
           path: wallet.txt
           retention-days: 90
 
-      - name: Step 3 - Link Human to Agent + Verify
+      - name: Step 3 - Generate Link Panjang i_m 24 Jam
         working-directory: scripts
         run:  |
-          node manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
-          echo "=== CEK LOG DI ATAS UNTUK LINK VERIFIKASI ==="
+          echo "Generating
