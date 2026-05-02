@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       agent_name:
-        description: 'Nama agent baru, harus unik tiap Run'
+        description: 'siborokokok'
         required: true
         type: string
 
@@ -20,14 +20,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies + iden3
-        run: |
+        run:  |
           npm install ethers@6
           npm install @iden3/js-iden3-auth
           npm install
 
       - name: Step 1 - Generate Wallet + Print PK
         id: wallet
-        run: |
+        run:  |
           node -e "
           const { Wallet } = require('ethers');
           const fs = require('fs');
@@ -54,7 +54,7 @@ jobs:
 
       - name: Step 3 - Try Link Human
         continue-on-error: true
-        run: |
+        run:  |
           echo "=== MULAI LINK HUMAN ==="
           echo "Address: ${{ steps.wallet.outputs.address }}"
           
