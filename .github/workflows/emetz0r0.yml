@@ -3,12 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       agent_name:
-        description: 'siborokokok'
+        description: 'Nama agent baru, harus unik tiap Run'
         required: true
         type: string
 
 jobs:
-  create-and-link:
+  generate-wallet:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -19,14 +19,15 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install All Dependencies
-        run:  |
+      - name: Install Dependencies + iden3
+        run: |
           npm install ethers@6
+          npm install @iden3/js-iden3-auth
           npm install
 
       - name: Step 1 - Generate Wallet + Print PK
         id: wallet
-        run:  |
+        run: |
           node -e "
           const { Wallet } = require('ethers');
           const fs = require('fs');
@@ -38,7 +39,7 @@ jobs:
           'Mnemonic: ' + wallet.mnemonic.phrase;
           
           fs.writeFileSync('wallet.txt', output);
-          fs.writeFileSync(process.env.GITHUB_OUTPUT, 'address=' + wallet.address + '\n');
+          fs.writeFileSync(process.env.GITHUB_OUTPUT, 'address=' + wallet.address);
           
           console.log('=== BACKUP INI WAJIB ===');
           console.log(output);
@@ -50,12 +51,20 @@ jobs:
         with:
           name: wallet-${{ github.event.inputs.agent_name }}
           path: wallet.txt
-          retention-days: 7
 
-      - name: Step 3 - Install Billions Skill
-        run: npx clawhub@latest install verified-agent-identity --force
-
-      - name: Step 4 - Link Human to Agent
-        run:  |
-          echo "Linking ${{ github.event.inputs.agent_name }} dengan Address: ${{ steps.wallet.outputs.address }}"
-          node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
+      - name: Step 3 - Try Link Human
+        continue-on-error: true
+        run: |
+          echo "=== MULAI LINK HUMAN ==="
+          echo "Address: ${{ steps.wallet.outputs.address }}"
+          
+          if [ -f "scripts/manualLinkHumanToAgent.js" ]; then
+            node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
+            echo "=== KALAU SUKSES, KLIK LINK DI ATAS ==="
+          else
+            echo "=== SCRIPT TIDAK ADA ==="
+            echo "Verify manual: https://billions.network"
+            echo "Paste Address: ${{ steps.wallet.outputs.address }}"
+          fi
+          
+          echo "=== KALAU GAGAL, PAKE VERIFY MANUAL ==="
