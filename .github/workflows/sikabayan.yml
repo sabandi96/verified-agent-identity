@@ -23,9 +23,10 @@ jobs:
         run: npm install
 
       - name: Step 2 - Create Wallet Baru + Derive Address
+        working-directory: scripts
         run:  |
           rm -rf ~/.openclaw/billions/kms.json
-          node scripts/createNewEthereumIdentity.js
+          node createNewEthereumIdentity.js
 
           node -e "
           const { Wallet } = require('ethers');
@@ -35,7 +36,7 @@ jobs:
           const wallet = new Wallet(pk);
 
           const output = 'Agent: ${{ github.event.inputs.agent_name }}\nAddress: ' + wallet.address + '\nPrivate Key: ' + wallet.privateKey;
-          fs.writeFileSync('wallet.txt', output);
+          fs.writeFileSync('../wallet.txt', output);
 
           console.log('=== BACKUP WAJIB ===');
           console.log(output);
@@ -50,6 +51,7 @@ jobs:
           retention-days: 90
 
       - name: Step 3 - Link Human to Agent + Verify
+        working-directory: scripts
         run:  |
-          node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
-          echo "=== KALAU SUKSES, LINK VERIFIKASI ADA DI LOG ATAS ==="
+          node manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
+          echo "=== CEK LOG DI ATAS UNTUK LINK VERIFIKASI ==="
