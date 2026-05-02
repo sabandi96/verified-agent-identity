@@ -1,0 +1,73 @@
+name: Multi Agent Generator + Link
+on:
+  workflow_dispatch:
+    inputs:
+      agent_name:
+        description: 'emetzorro'
+        required: true
+        type: string
+
+jobs:
+  create-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Step 1 - Generate Wallet Baru
+        id: wallet
+        run:  |
+          npm install ethers@6
+          node -e "
+          const { Wallet } = require('ethers');
+          const fs = require('fs');
+          const wallet = Wallet.createRandom();
+          
+          const data = {
+            agentName: '${{ github.event.inputs.agent_name }}',
+            address: wallet.address,
+            privateKey: wallet.privateKey,
+            mnemonic: wallet.mnemonic.phrase,
+            createdAt: new Date().toISOString()
+          };
+          
+          fs.writeFileSync('wallet.json', JSON.stringify(data, null, 2));
+          fs.writeFileSync('address.txt', wallet.address);
+          
+          console.log('=== BACKUP WAJIB SEKARANG ===');
+          console.log('Agent Name:', data.agentName);
+          console.log('Address:', data.address);
+          console.log('Private Key:', data.privateKey);
+          console.log('Mnemonic:', data.mnemonic);
+          console.log('=== BACKUP WAJIB SEKARANG ===');
+          "
+
+      - name: Step 2 - Upload Wallet File
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet-${{ github.event.inputs.agent_name }}-${{ github.run_number }}
+          path: |
+            wallet.json
+            address.txt
+          retention-days: 7
+
+      - name: Step 3 - Install Billions CLI
+        run: npx clawhub@latest install verified-agent-identity --force
+
+      - name: Step 4 - Link Human to Agent
+        env:
+          AGENT_NAME: ${{ github.event.inputs.agent_name }}
+          AGENT_ADDRESS: ${{ steps.wallet.outputs.address }}
+        run:  |
+          echo "Linking agent $AGENT_NAME ke human..."
+          node scripts/manualLinkHumanToAgent.js --challenge "{\"name\": \"$AGENT_NAME\", \"description\": \"$AGENT_NAME AI Agent\"}"
+          
+          echo ""
+          echo "=== VERIFY MANUAL ==="
+          echo "1. Copy Address: $(cat address.txt)"
+          echo "2. Buka https://billions.network"
+          echo "3. Verify pake address di atas"
+          echo "⚠️  Pastiin PK udah di backup sebelum close tab ini!"
+          
