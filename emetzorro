@@ -1,22 +1,25 @@
-name: Multi Agent Generator + Link
+name: Verify Human Identity
 on:
   workflow_dispatch:
     inputs:
       agent_name:
-        description: 'emetzorro'
+        description: 'emetz0r0'
         required: true
         type: string
 
 jobs:
-  create-agent:
+  create-and-link:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Step 1 - Generate Wallet Baru
+      - name: Step 1 - Generate Wallet + Print PK
         id: wallet
         run:  |
           npm install ethers@6
@@ -25,48 +28,30 @@ jobs:
           const fs = require('fs');
           const wallet = Wallet.createRandom();
           
-          const data = {
-            agentName: '${{ github.event.inputs.agent_name }}',
-            address: wallet.address,
-            privateKey: wallet.privateKey,
-            mnemonic: wallet.mnemonic.phrase,
-            createdAt: new Date().toISOString()
-          };
+          const data = \`Agent Name: ${{ github.event.inputs.agent_name }}
+Address: \${wallet.address}
+Private Key: \${wallet.privateKey}
+Mnemonic: \${wallet.mnemonic.phrase}\`;
           
-          fs.writeFileSync('wallet.json', JSON.stringify(data, null, 2));
-          fs.writeFileSync('address.txt', wallet.address);
+          fs.writeFileSync('wallet.txt', data);
+          fs.writeFileSync(process.env.GITHUB_OUTPUT, \`address=\${wallet.address}\n\`);
           
-          console.log('=== BACKUP WAJIB SEKARANG ===');
-          console.log('Agent Name:', data.agentName);
-          console.log('Address:', data.address);
-          console.log('Private Key:', data.privateKey);
-          console.log('Mnemonic:', data.mnemonic);
-          console.log('=== BACKUP WAJIB SEKARANG ===');
+          console.log('=== BACKUP INI WAJIB ===');
+          console.log(data);
+          console.log('=== BACKUP INI WAJIB ===');
           "
 
       - name: Step 2 - Upload Wallet File
         uses: actions/upload-artifact@v4
         with:
-          name: wallet-${{ github.event.inputs.agent_name }}-${{ github.run_number }}
-          path: |
-            wallet.json
-            address.txt
+          name: wallet-${{ github.event.inputs.agent_name }}
+          path: wallet.txt
           retention-days: 7
 
-      - name: Step 3 - Install Billions CLI
+      - name: Step 3 - Install Billions Skill
         run: npx clawhub@latest install verified-agent-identity --force
 
       - name: Step 4 - Link Human to Agent
-        env:
-          AGENT_NAME: ${{ github.event.inputs.agent_name }}
-          AGENT_ADDRESS: ${{ steps.wallet.outputs.address }}
         run:  |
-          echo "Linking agent $AGENT_NAME ke human..."
-          node scripts/manualLinkHumanToAgent.js --challenge "{\"name\": \"$AGENT_NAME\", \"description\": \"$AGENT_NAME AI Agent\"}"
+          echo "Linking ${{ github.event.inputs.agent_name }} dengan Address: ${{ steps.wallet.outputs.address }}"
           
-          echo ""
-          echo "=== VERIFY MANUAL ==="
-          echo "1. Copy Address: $(cat address.txt)"
-          echo "2. Buka https://billions.network"
-          echo "3. Verify pake address di atas"
-          echo "⚠️  Pastiin PK udah di backup sebelum close tab ini!"
