@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       agent_name:
-        description: 'emetz0r0'
+        description: 'siborokokok'
         required: true
         type: string
 
@@ -28,16 +28,16 @@ jobs:
           const fs = require('fs');
           const wallet = Wallet.createRandom();
           
-          const data = \`Agent Name: ${{ github.event.inputs.agent_name }}
-Address: \${wallet.address}
-Private Key: \${wallet.privateKey}
-Mnemonic: \${wallet.mnemonic.phrase}\`;
+          const output = 'Agent Name: ${{ github.event.inputs.agent_name }}\n' +
+          'Address: ' + wallet.address + '\n' +
+          'Private Key: ' + wallet.privateKey + '\n' +
+          'Mnemonic: ' + wallet.mnemonic.phrase;
           
-          fs.writeFileSync('wallet.txt', data);
-          fs.writeFileSync(process.env.GITHUB_OUTPUT, \`address=\${wallet.address}\n\`);
+          fs.writeFileSync('wallet.txt', output);
+          fs.writeFileSync(process.env.GITHUB_OUTPUT, 'address=' + wallet.address + '\n');
           
           console.log('=== BACKUP INI WAJIB ===');
-          console.log(data);
+          console.log(output);
           console.log('=== BACKUP INI WAJIB ===');
           "
 
@@ -54,4 +54,8 @@ Mnemonic: \${wallet.mnemonic.phrase}\`;
       - name: Step 4 - Link Human to Agent
         run:  |
           echo "Linking ${{ github.event.inputs.agent_name }} dengan Address: ${{ steps.wallet.outputs.address }}"
-          
+          if [ -f "scripts/manualLinkHumanToAgent.js" ]; then
+            node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
+          else
+            echo "Script tidak ada. Verify manual pake Address: ${{ steps.wallet.outputs.address }}"
+          fi
