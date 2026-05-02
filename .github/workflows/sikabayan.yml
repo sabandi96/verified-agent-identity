@@ -32,7 +32,10 @@ jobs:
           const { Wallet } = require('ethers');
           const fs = require('fs');
           const kms = JSON.parse(fs.readFileSync(process.env.HOME + '/.openclaw/billions/kms.json', 'utf8'));
-          const pk = kms[0].privateKeyHex;
+
+          let pk = kms[0].privateKeyHex;
+          if (!pk.startsWith('0x')) pk = '0x' + pk;
+
           const wallet = new Wallet(pk);
 
           const output = 'Agent: ${{ github.event.inputs.agent_name }}\nAddress: ' + wallet.address + '\nPrivate Key: ' + wallet.privateKey;
