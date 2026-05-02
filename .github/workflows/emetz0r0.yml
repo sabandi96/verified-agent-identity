@@ -1,0 +1,57 @@
+name: Verify Human Identity
+on:
+  workflow_dispatch:
+    inputs:
+      agent_name:
+        description: 'emetz0r0'
+        required: true
+        type: string
+
+jobs:
+  create-and-link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Step 1 - Generate Wallet + Print PK
+        id: wallet
+        run:  |
+          npm install ethers@6
+          node -e "
+          const { Wallet } = require('ethers');
+          const fs = require('fs');
+          const wallet = Wallet.createRandom();
+          
+          const data = \`Agent Name: ${{ github.event.inputs.agent_name }}
+Address: \${wallet.address}
+Private Key: \${wallet.privateKey}
+Mnemonic: \${wallet.mnemonic.phrase}\`;
+          
+          fs.writeFileSync('wallet.txt', data);
+          fs.writeFileSync(process.env.GITHUB_OUTPUT, \`address=\${wallet.address}\n\`);
+          
+          console.log('=== BACKUP INI WAJIB ===');
+          console.log(data);
+          console.log('=== BACKUP INI WAJIB ===');
+          "
+
+      - name: Step 2 - Upload Wallet File
+        uses: actions/upload-artifact@v4
+        with:
+          name: wallet-${{ github.event.inputs.agent_name }}
+          path: wallet.txt
+          retention-days: 7
+
+      - name: Step 3 - Install Billions Skill
+        run: npx clawhub@latest install verified-agent-identity --force
+
+      - name: Step 4 - Link Human to Agent
+        run:  |
+          echo "Linking ${{ github.event.inputs.agent_name }} dengan Address: ${{ steps.wallet.outputs.address }}"
+          
