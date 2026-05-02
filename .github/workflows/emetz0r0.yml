@@ -19,10 +19,14 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install All Dependencies
+        run:  |
+          npm install ethers@6
+          npm install
+
       - name: Step 1 - Generate Wallet + Print PK
         id: wallet
         run:  |
-          npm install ethers@6
           node -e "
           const { Wallet } = require('ethers');
           const fs = require('fs');
@@ -54,8 +58,4 @@ jobs:
       - name: Step 4 - Link Human to Agent
         run:  |
           echo "Linking ${{ github.event.inputs.agent_name }} dengan Address: ${{ steps.wallet.outputs.address }}"
-          if [ -f "scripts/manualLinkHumanToAgent.js" ]; then
-            node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
-          else
-            echo "Script tidak ada. Verify manual pake Address: ${{ steps.wallet.outputs.address }}"
-          fi
+          node scripts/manualLinkHumanToAgent.js --challenge '{"name": "${{ github.event.inputs.agent_name }}", "description": "${{ github.event.inputs.agent_name }} AI Agent"}'
