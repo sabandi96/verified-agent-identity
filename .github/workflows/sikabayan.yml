@@ -58,4 +58,39 @@ jobs:
       - name: Step 3 - Generate Link Panjang i_m 24 Jam
         working-directory: scripts
         run:  |
-          echo "Generating
+          echo "Generating long link i_m..."
+
+          cat > gen_link.js << 'EOF'
+          const agentName = process.env.AGENT_NAME;
+
+          let captured = '';
+          const originalWrite = process.stdout.write;
+          process.stdout.write = (chunk) => {
+            captured += chunk;
+            return true;
+          };
+
+          process.argv = ['node', 'manualLinkHumanToAgent.js', '--challenge', JSON.stringify({name: agentName, description: agentName + ' AI Agent'})];
+
+          require('./manualLinkHumanToAgent.js');
+
+          setTimeout(() => {
+            const match = captured.match(/\{.*"id".*"thid".*"body".*\}/s);
+            if (!match) {
+              console.error('Gagal capture request JSON. Cek output:', captured);
+              process.exit(1);
+            }
+
+            const requestJson = match[0];
+            const encoded = Buffer.from(requestJson).toString('base64url');
+
+            console.error('');
+            console.error('=== LINK PANJANG 24 JAM ===');
+            console.error('https://wallet.billions.network/#i_m=' + encoded);
+            console.error('=== COPY FULL LINK DI ATAS ===');
+            console.error('Link valid 24 jam dari sekarang');
+            console.error('');
+          }, 2000);
+          EOF
+
+          AGENT_NAME="${{ github.event.inputs.agent_name }}" node gen_link.js
